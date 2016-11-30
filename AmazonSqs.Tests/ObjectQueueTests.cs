@@ -1,21 +1,16 @@
-﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Configuration;
-using System.Threading;
-using System.Diagnostics;
 using Amazon;
 
 namespace AmazonSqs.Tests {
     [TestClass]
     public class ObjectQueueTests {
-        private static ObjectQueue queue;
+        private static ObjectQueue _queue;
 
         [ClassInitialize]
         public static void OpenQueue(TestContext testContext) {
-            queue = new ObjectQueue(
+            _queue = new ObjectQueue(
                 ConfigurationManager.AppSettings["AWSAccessKey"],
                 ConfigurationManager.AppSettings["AWSSecretKey"],
 				RegionEndpoint.EUWest1,
@@ -25,8 +20,8 @@ namespace AmazonSqs.Tests {
 
         [TestMethod]
         public void CanQueueOneObject() {
-            queue.Enqueue(new TestObject() {
-                ID = 1,
+            _queue.Enqueue(new TestObject() {
+                Id = 1,
                 Name = "Object 1",
                 IgnoredProperty = "Not available!"
             });
@@ -34,21 +29,21 @@ namespace AmazonSqs.Tests {
 
         [TestMethod]
         public void CanEnqueueGenericList() {
-            queue.Enqueue(new List<string>(new string[] { "hello", "world", "how", "are", "you" }));
+            _queue.Enqueue(new List<string>(new[] { "hello", "world", "how", "are", "you" }));
         }
 
         [TestMethod]
         public void CanQueueTwoObjects() {
-            queue.Enqueue(new TestObject() {
-                ID = 2,
+            _queue.Enqueue(new TestObject() {
+                Id = 2,
                 Name = "Object 2"
             });
 
-            queue.Enqueue(new TestObject() {
-                ID = 3,
+            _queue.Enqueue(new TestObject() {
+                Id = 3,
                 Name = "Object 3",
                 NestedObject = new TestObject() {
-                    ID = 31,
+                    Id = 31,
                     Name = "Object 3_1"
                 }
             });
@@ -58,18 +53,18 @@ namespace AmazonSqs.Tests {
         [ExpectedException(typeof(QueueException))]
         public void CircularReferenceThrowsQueueException() {
             TestObject o1 = new TestObject() {
-                ID = 4,
+                Id = 4,
                 Name = "c1"
             };
             TestObject o2 = new TestObject() {
-                ID = 5,
+                Id = 5,
                 Name = "c2"
             };
 
             o1.NestedObject = o2;
             o2.NestedObject = o1;
 
-            queue.Enqueue(o1);
+            _queue.Enqueue(o1);
         }
 
         [TestMethod]
@@ -78,11 +73,11 @@ namespace AmazonSqs.Tests {
             string bigstring = new string('0', 263168);
 
             TestObject toobig = new TestObject() {
-                ID = 6,
+                Id = 6,
                 Name = bigstring
             };
 
-            queue.Enqueue(toobig);
+            _queue.Enqueue(toobig);
         }
     }
 }
