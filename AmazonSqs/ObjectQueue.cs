@@ -7,14 +7,24 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 
 namespace AmazonSqs {
-    public class ObjectQueue {
+    public class ObjectQueue : IDisposable {
 	    private readonly string _queueName;
-	    private static readonly Lazy<JavaScriptSerializer> serializer = new Lazy<JavaScriptSerializer>();
+	    private static readonly Lazy<JavaScriptSerializer> JsonSerializer = new Lazy<JavaScriptSerializer>();
         private const int MaxMessageSize = 262144; // 256K
         private readonly IAmazonSQS _client;
-        private string _queueUrl;
 
-        public ObjectQueue(string awsAccessKey, string awsSecretKey, RegionEndpoint region, string queueName) {
+		/// <summary>
+		/// Gets the queue url.
+		/// </summary>
+	    public string QueueUrl { get; private set; }
+
+	    /// <summary>
+		/// Gets or sets whether this instance has
+		/// been disposed.
+		/// </summary>
+		public bool IsDisposed { get; private set; }
+
+		public ObjectQueue(string awsAccessKey, string awsSecretKey, RegionEndpoint region, string queueName) {
 	        _queueName = queueName;
 	        _client = new AmazonSQSClient(
                 awsAccessKey,
@@ -28,34 +38,63 @@ namespace AmazonSqs {
 
 	    private JavaScriptSerializer Serializer {
             get {
-                if (!serializer.IsValueCreated) {
-                    serializer.Value.MaxJsonLength = MaxMessageSize;
+                if (!JsonSerializer.IsValueCreated) {
+                    JsonSerializer.Value.MaxJsonLength = MaxMessageSize;
                 }
-                return serializer.Value;
+                return JsonSerializer.Value;
             }
         }
 
-        private bool QueueExists()
+		public static bool QueueExists(string queueName, IAmazonSQS client)
+		{
+			var queueExists = false;
+			var lqr = new ListQueuesRequest();
+			var queues = client.ListQueues(lqr);
+
+			if (queues.QueueUrls != null)
+			{
+				foreach (string queue in queues.QueueUrls)
+				{
+					if (queue.EndsWith(queueName) && queue.Substring(0, queue.Length-queueName.Length).EndsWith("/"))
+					{
+						queueExists = true;
+						break;
+					}
+				}
+			}
+
+			return queueExists;
+		}
+
+		public static bool QueueExists(Uri queueUrl, IAmazonSQS client)
+		{
+			var queueExists = false;
+			var lqr = new ListQueuesRequest();
+			var queues = client.ListQueues(lqr);
+			
+			if (queues.QueueUrls != null)
+			{
+				foreach (string queue in queues.QueueUrls)
+				{
+					if (new Uri(queue) == queueUrl)
+					{
+						queueExists = true;
+						break;
+					}
+				}
+			}
+
+			return queueExists;
+		}
+
+		private bool QueueExists()
         {
-	        var queueExists = false;
-	        var lqr = new ListQueuesRequest();
-            var queues = _client.ListQueues(lqr);
-
-            if (queues.QueueUrls != null) {
-                foreach (string queue in queues.QueueUrls) {
-                    if (queue == _queueUrl) {
-                        queueExists = true;
-	                    break;
-                    }
-                }
-            }
-
-	        return queueExists;
+	        return QueueExists(_queueName, _client);
         }
 
         public int GetMessageCount()
         {
-            var sqsRequest = new GetQueueAttributesRequest { QueueUrl = _queueUrl };
+            var sqsRequest = new GetQueueAttributesRequest { QueueUrl = QueueUrl };
             sqsRequest.AttributeNames.Add("ApproximateNumberOfMessages");
             var sqsResponse = _client.GetQueueAttributes(sqsRequest);
             return sqsResponse.ApproximateNumberOfMessages;
@@ -64,7 +103,7 @@ namespace AmazonSqs {
         public void DeleteMessage(string receiptHandle) {
 	        var dmr = new DeleteMessageRequest
 	        {
-		        QueueUrl = _queueUrl,
+		        QueueUrl = QueueUrl,
 		        ReceiptHandle = receiptHandle
 	        };
 
@@ -74,7 +113,7 @@ namespace AmazonSqs {
         public void Enqueue<T>(T submission) where T : new() {
             try {
                 SendMessageRequest req = new SendMessageRequest();
-                req.QueueUrl = _queueUrl;
+                req.QueueUrl = QueueUrl;
 
                 req.MessageBody = Serializer.Serialize(submission);
 
@@ -107,7 +146,7 @@ namespace AmazonSqs {
         }
 
         private ObjectMessage<T> Next<T>(bool delete) where T : new() {
-	        var rmr = new ReceiveMessageRequest {QueueUrl = _queueUrl};
+	        var rmr = new ReceiveMessageRequest {QueueUrl = QueueUrl};
 	        rmr.AttributeNames.Add("SentTimestamp");
             rmr.AttributeNames.Add("ApproximateReceiveCount");
             rmr.AttributeNames.Add("ApproximateFirstReceiveTimestamp");
@@ -155,7 +194,7 @@ namespace AmazonSqs {
                 throw new ArgumentOutOfRangeException("maxMessagesToProcess", "maxMessages must be between 1 and 10.");
             }
 
-            var rmr = new ReceiveMessageRequest {QueueUrl = _queueUrl, MaxNumberOfMessages = maxMessagesToProcess};
+            var rmr = new ReceiveMessageRequest {QueueUrl = QueueUrl, MaxNumberOfMessages = maxMessagesToProcess};
             List<T> retval = new List<T>();
 
             var response = _client.ReceiveMessage(rmr);
@@ -177,7 +216,7 @@ namespace AmazonSqs {
 		/// <returns></returns>
 	    public DeleteQueueResponse DeleteQueue()
 	    {
-		    return _client.DeleteQueue(_queueUrl);
+		    return _client.DeleteQueue(new DeleteQueueRequest(QueueUrl));
 	    }
 
 		/// <summary>
@@ -186,14 +225,13 @@ namespace AmazonSqs {
 		/// <param name="queueName">The name of the queue.</param>
 		private void CreateQueue(string queueName)
 		{
-			var cqr = new CreateQueueRequest { QueueName = queueName };
-
 			try
 			{
-				var response = _client.CreateQueue(cqr);
+				var response = _client.CreateQueue(queueName);
+				
 				if (!string.IsNullOrEmpty(response.QueueUrl))
 				{
-					_queueUrl = response.QueueUrl;
+					QueueUrl = response.QueueUrl;
 				}
 				else
 				{
@@ -205,5 +243,37 @@ namespace AmazonSqs {
 				throw new QueueException("Queue could not be created.", ex);
 			}
 		}
+
+		#region Implementation of IDisposable
+
+		/// <summary>
+		/// Performs application-defined tasks associated with freeing, 
+		/// releasing, or resetting unmanaged resources.
+		/// </summary>
+		public void Dispose()
+		{
+			Dispose(true);
+
+			GC.SuppressFinalize(this);
+		}
+
+		/// <summary>
+		/// Performs application-defined tasks associated with freeing, 
+		/// releasing, or resetting unmanaged resources.
+		/// </summary>
+		private void Dispose(bool disposing)
+		{
+			if (!IsDisposed)
+			{
+				if (disposing)
+				{
+					_client.Dispose();
+				}
+
+				IsDisposed = true;
+			}
+		}
+
+		#endregion
 	}
 }

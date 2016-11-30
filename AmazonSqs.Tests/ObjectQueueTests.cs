@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Configuration;
 using Amazon;
+using Amazon.SQS;
 
 namespace AmazonSqs.Tests {
     [TestClass]
@@ -79,5 +81,32 @@ namespace AmazonSqs.Tests {
 
             _queue.Enqueue(toobig);
         }
+
+	    [TestMethod]
+	    //public void CheckIfQueueExists()
+	    //{
+		   // var queueName = Guid.NewGuid().ToString();
+
+		   // using (var client = new AmazonSQSClient(
+			  //  ConfigurationManager.AppSettings["AWSAccessKey"],
+			  //  ConfigurationManager.AppSettings["AWSSecretKey"],
+			  //  RegionEndpoint.EUWest1))
+		   // {
+			  //  Assert.IsFalse(ObjectQueue.QueueExists(queueName, client));
+
+			  //  using (var queue = new ObjectQueue(
+				 //   ConfigurationManager.AppSettings["AWSAccessKey"],
+				 //   ConfigurationManager.AppSettings["AWSSecretKey"],
+				 //   RegionEndpoint.EUWest1,
+				 //   queueName
+			  //  ))
+			  //  {
+
+				 //   Assert.IsTrue(ObjectQueue.QueueExists(queueName, client));
+				 //   queue.DeleteQueue();
+				 //   Assert.IsFalse(ObjectQueue.QueueExists(queueName, client));
+			  //  }
+		   // }
+	    //}
     }
 }
