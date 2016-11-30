@@ -8,42 +8,25 @@ using Amazon.SQS.Model;
 
 namespace AmazonSqs {
     public class ObjectQueue {
-        private static readonly Lazy<JavaScriptSerializer> serializer = new Lazy<JavaScriptSerializer>();
+	    private readonly string _queueName;
+	    private static readonly Lazy<JavaScriptSerializer> serializer = new Lazy<JavaScriptSerializer>();
         private const int MaxMessageSize = 262144; // 256K
         private readonly IAmazonSQS _client;
-        private readonly string _queueUrl;
-        private bool? _queueExists;
+        private string _queueUrl;
 
         public ObjectQueue(string awsAccessKey, string awsSecretKey, RegionEndpoint region, string queueName) {
-            this._client = new AmazonSQSClient(
+	        _queueName = queueName;
+	        _client = new AmazonSQSClient(
                 awsAccessKey,
                 awsSecretKey,
 				region
 			);
 
-            EnsureQueueExists();
-
-	        var cqr = new CreateQueueRequest {QueueName = queueName};
-
-	        try
-            {
-                var response = _client.CreateQueue(cqr);
-                if (!string.IsNullOrEmpty(response.QueueUrl))
-                {
-                    _queueUrl = response.QueueUrl;
-                }
-                else
-                {
-                    throw new QueueException("Queue could not be created.");
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new QueueException("Queue could not be created.", ex);
-            }
+			if(!QueueExists())
+				CreateQueue(queueName);
         }
 
-        private JavaScriptSerializer Serializer {
+	    private JavaScriptSerializer Serializer {
             get {
                 if (!serializer.IsValueCreated) {
                     serializer.Value.MaxJsonLength = MaxMessageSize;
@@ -52,27 +35,22 @@ namespace AmazonSqs {
             }
         }
 
-        private void EnsureQueueExists() {
-            if (_queueExists.HasValue && _queueExists.Value) {
-                return;
-            }
-
-	        if (_queueExists.HasValue && !_queueExists.Value) {
-		        throw new QueueException("Queue is not available or could not be created.");
-	        }
-
+        private bool QueueExists()
+        {
+	        var queueExists = false;
 	        var lqr = new ListQueuesRequest();
             var queues = _client.ListQueues(lqr);
+
             if (queues.QueueUrls != null) {
                 foreach (string queue in queues.QueueUrls) {
                     if (queue == _queueUrl) {
-                        _queueExists = true;
-                        return;
+                        queueExists = true;
+	                    break;
                     }
                 }
             }
 
-            _queueExists = false;
+	        return queueExists;
         }
 
         public int GetMessageCount()
@@ -192,5 +170,40 @@ namespace AmazonSqs {
 
             return retval;
         }
-    }
+
+		/// <summary>
+		/// Deletes the queue.
+		/// </summary>
+		/// <returns></returns>
+	    public DeleteQueueResponse DeleteQueue()
+	    {
+		    return _client.DeleteQueue(_queueUrl);
+	    }
+
+		/// <summary>
+		/// Create a queue.
+		/// </summary>
+		/// <param name="queueName">The name of the queue.</param>
+		private void CreateQueue(string queueName)
+		{
+			var cqr = new CreateQueueRequest { QueueName = queueName };
+
+			try
+			{
+				var response = _client.CreateQueue(cqr);
+				if (!string.IsNullOrEmpty(response.QueueUrl))
+				{
+					_queueUrl = response.QueueUrl;
+				}
+				else
+				{
+					throw new QueueException("Queue could not be created.");
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new QueueException("Queue could not be created.", ex);
+			}
+		}
+	}
 }
