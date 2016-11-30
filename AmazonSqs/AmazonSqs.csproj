@@ -60,7 +60,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AmazonSqs.snk" />
-    <None Include="AvantPrime.AmazonSqs.nuspec" />
+    <None Include="AmazonSqs.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
