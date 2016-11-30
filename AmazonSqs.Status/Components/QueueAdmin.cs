@@ -112,7 +112,7 @@ namespace AmazonSqs.Status.Components {
         }
 
         public QueueAdmin(string awsAccessKey, string awsSecretKey) {
-            this.client = AWSClientFactory.CreateAmazonSQSClient(
+            this.client = new AmazonSQSClient(
                 awsAccessKey, awsSecretKey
             );
         }

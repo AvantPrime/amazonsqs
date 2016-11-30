@@ -18,7 +18,7 @@ namespace AmazonSqs {
         private bool? queueExists = null;
 
         public ObjectQueue(string awsAccessKey, string awsSecretKey, string queueName) {
-            this.client = AWSClientFactory.CreateAmazonSQSClient(
+            this.client = new AmazonSQSClient(
                 awsAccessKey,
                 awsSecretKey
             );
