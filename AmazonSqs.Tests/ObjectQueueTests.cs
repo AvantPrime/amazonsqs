@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Configuration;
 using Amazon;
 using Amazon.SQS;
+using Newtonsoft.Json;
 
 namespace AmazonSqs.Tests {
     [TestClass]
@@ -58,7 +59,7 @@ namespace AmazonSqs.Tests {
         }
 
         [TestMethod]
-        [ExpectedException(typeof(QueueException))]
+        [ExpectedException(typeof(JsonSerializationException))]
         public void CircularReferenceThrowsQueueException() {
             TestObject o1 = new TestObject() {
                 Id = 4,
