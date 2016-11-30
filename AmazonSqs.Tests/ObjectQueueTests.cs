@@ -20,7 +20,13 @@ namespace AmazonSqs.Tests {
             );
         }
 
-        [TestMethod]
+		[ClassCleanup]
+		public static void CleanupQueue(TestContext testContext)
+		{
+			_queue.DeleteQueue();
+		}
+
+		[TestMethod]
         public void CanQueueOneObject() {
             _queue.Enqueue(new TestObject() {
                 Id = 1,
