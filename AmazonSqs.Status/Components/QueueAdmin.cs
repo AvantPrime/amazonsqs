@@ -111,9 +111,9 @@ namespace AmazonSqs.Status.Components {
             return result;
         }
 
-        public QueueAdmin(string awsAccessKey, string awsSecretKey) {
+        public QueueAdmin(string awsAccessKey, string awsSecretKey, RegionEndpoint region) {
             this.client = new AmazonSQSClient(
-                awsAccessKey, awsSecretKey
+                awsAccessKey, awsSecretKey, region
             );
         }
     }

@@ -15,6 +15,7 @@ using AmazonSqs.Status.Components;
 using AmazonSqs.Status.Properties;
 using System.Collections.ObjectModel;
 using System.Threading;
+using Amazon;
 
 namespace AmazonSqs.Status {
     /// <summary>
@@ -32,7 +33,8 @@ namespace AmazonSqs.Status {
 
             this.queueAdmin = new QueueAdmin(
                 Settings.Default.AwsAccessKey,
-                Settings.Default.AwsSecretKey
+                Settings.Default.AwsSecretKey,
+				RegionEndpoint.EUWest1
             );
 
             RefreshQueues();

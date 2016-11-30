@@ -17,11 +17,12 @@ namespace AmazonSqs {
 
         private bool? queueExists = null;
 
-        public ObjectQueue(string awsAccessKey, string awsSecretKey, string queueName) {
+        public ObjectQueue(string awsAccessKey, string awsSecretKey, RegionEndpoint region, string queueName) {
             this.client = new AmazonSQSClient(
                 awsAccessKey,
-                awsSecretKey
-            );
+                awsSecretKey,
+				region
+			);
 
             EnsureQueueExists();
 

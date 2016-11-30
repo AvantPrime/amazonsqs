@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Configuration;
 using System.Threading;
 using System.Diagnostics;
+using Amazon;
 
 namespace AmazonSqs.Tests {
     [TestClass]
@@ -17,7 +18,8 @@ namespace AmazonSqs.Tests {
             queue = new ObjectQueue(
                 ConfigurationManager.AppSettings["AWSAccessKey"],
                 ConfigurationManager.AppSettings["AWSSecretKey"],
-                "AmazonSqs-ObjectQueue-UnitTests"
+				RegionEndpoint.EUWest1,
+				"AmazonSqs-ObjectQueue-UnitTests"
             );
         }
 
