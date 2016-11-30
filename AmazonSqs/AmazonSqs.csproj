@@ -55,6 +55,7 @@
     <Compile Include="QueueException.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="AvantPrime.AmazonSqs.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
