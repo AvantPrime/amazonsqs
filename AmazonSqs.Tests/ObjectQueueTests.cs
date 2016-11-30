@@ -21,7 +21,7 @@ namespace AmazonSqs.Tests {
         }
 
 		[ClassCleanup]
-		public static void CleanupQueue(TestContext testContext)
+		public static void CleanupQueue()
 		{
 			_queue.DeleteQueue();
 		}
