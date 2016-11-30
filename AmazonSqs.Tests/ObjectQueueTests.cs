@@ -82,7 +82,7 @@ namespace AmazonSqs.Tests {
             _queue.Enqueue(toobig);
         }
 
-	    [TestMethod]
+	    //[TestMethod]
 	    //public void CheckIfQueueExists()
 	    //{
 		   // var queueName = Guid.NewGuid().ToString();
