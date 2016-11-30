@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web.Script.Serialization;
 using Amazon;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using Newtonsoft.Json;
 
 namespace AmazonSqs {
     public class ObjectQueue : IDisposable {
 	    private readonly string _queueName;
-	    private static readonly Lazy<JavaScriptSerializer> JsonSerializer = new Lazy<JavaScriptSerializer>();
         private const int MaxMessageSize = 262144; // 256K
         private readonly IAmazonSQS _client;
 
@@ -34,15 +33,6 @@ namespace AmazonSqs {
 
 			if(!QueueExists())
 				CreateQueue(queueName);
-        }
-
-	    private JavaScriptSerializer Serializer {
-            get {
-                if (!JsonSerializer.IsValueCreated) {
-                    JsonSerializer.Value.MaxJsonLength = MaxMessageSize;
-                }
-                return JsonSerializer.Value;
-            }
         }
 
 		public static bool QueueExists(string queueName, IAmazonSQS client)
@@ -112,25 +102,16 @@ namespace AmazonSqs {
 
         public void Enqueue<T>(T submission) where T : new() {
             try {
-                SendMessageRequest req = new SendMessageRequest();
-                req.QueueUrl = QueueUrl;
+	            SendMessageRequest req = new SendMessageRequest
+	            {
+		            QueueUrl = QueueUrl,
+		            MessageBody = JsonConvert.SerializeObject(submission)
+	            };
 
-                req.MessageBody = Serializer.Serialize(submission);
-
-                _client.SendMessage(req);
+	            _client.SendMessage(req);
             } catch (AmazonSQSException ex) {
                 throw new QueueException(
                     "Could not queue request.",
-                    ex
-                );
-            } catch (InvalidOperationException ex) {
-                throw new QueueException(
-                    "The maximum size of the object graph must not exceed " + Serializer.MaxJsonLength + " bytes.",
-                    ex
-                );
-            } catch (ArgumentException ex) {
-                throw new QueueException(
-                    "The maximum object depth (" + Serializer.RecursionLimit + ") was reached.",
                     ex
                 );
             }
@@ -157,7 +138,7 @@ namespace AmazonSqs {
                 ObjectMessage<T> value = new ObjectMessage<T>();
                 Message m = response.Messages[0];
                 DateTime epochDate = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                value.Object = Serializer.Deserialize<T>(m.Body);
+                value.Object = JsonConvert.DeserializeObject<T>(m.Body);
                 value.ReceiptHandle = m.ReceiptHandle;
 
                 foreach (KeyValuePair<string, string> att in m.Attributes) {
@@ -201,7 +182,7 @@ namespace AmazonSqs {
             if (response.Messages != null && response.Messages.Any()) {
                 retval.Capacity = response.Messages.Count;
                 foreach (Message m in response.Messages) {
-                    T value = Serializer.Deserialize<T>(m.Body);
+                    T value = JsonConvert.DeserializeObject<T>(m.Body);
                     DeleteMessage(m.ReceiptHandle);
                     retval.Add(value);
                 }
