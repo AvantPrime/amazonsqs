@@ -17,7 +17,7 @@ namespace AmazonSqs.Tests {
                 ConfigurationManager.AppSettings["AWSAccessKey"],
                 ConfigurationManager.AppSettings["AWSSecretKey"],
 				RegionEndpoint.EUWest1,
-				"AmazonSqs-ObjectQueue-UnitTests"
+				"AmazonSqs-ObjectQueue-UnitTests-" + Guid.NewGuid()
             );
         }
 
@@ -59,7 +59,7 @@ namespace AmazonSqs.Tests {
         }
 
         [TestMethod]
-        [ExpectedException(typeof(JsonSerializationException))]
+        [ExpectedException(typeof(QueueException))]
         public void CircularReferenceThrowsQueueException() {
             TestObject o1 = new TestObject() {
                 Id = 4,
@@ -89,31 +89,31 @@ namespace AmazonSqs.Tests {
             _queue.Enqueue(toobig);
         }
 
-	    //[TestMethod]
-	    //public void CheckIfQueueExists()
-	    //{
-		   // var queueName = Guid.NewGuid().ToString();
+		//[TestMethod]
+		//public void CheckIfQueueExists()
+		//{
+		//	var queueName = Guid.NewGuid().ToString();
 
-		   // using (var client = new AmazonSQSClient(
-			  //  ConfigurationManager.AppSettings["AWSAccessKey"],
-			  //  ConfigurationManager.AppSettings["AWSSecretKey"],
-			  //  RegionEndpoint.EUWest1))
-		   // {
-			  //  Assert.IsFalse(ObjectQueue.QueueExists(queueName, client));
+		//	using (var client = new AmazonSQSClient(
+		//		ConfigurationManager.AppSettings["AWSAccessKey"],
+		//		ConfigurationManager.AppSettings["AWSSecretKey"],
+		//		RegionEndpoint.EUWest1))
+		//	{
+		//		Assert.IsFalse(ObjectQueue.QueueExists(queueName, client));
 
-			  //  using (var queue = new ObjectQueue(
-				 //   ConfigurationManager.AppSettings["AWSAccessKey"],
-				 //   ConfigurationManager.AppSettings["AWSSecretKey"],
-				 //   RegionEndpoint.EUWest1,
-				 //   queueName
-			  //  ))
-			  //  {
+		//		using (var queue = new ObjectQueue(
+		//			ConfigurationManager.AppSettings["AWSAccessKey"],
+		//			ConfigurationManager.AppSettings["AWSSecretKey"],
+		//			RegionEndpoint.EUWest1,
+		//			queueName
+		//		))
+		//		{
 
-				 //   Assert.IsTrue(ObjectQueue.QueueExists(queueName, client));
-				 //   queue.DeleteQueue();
-				 //   Assert.IsFalse(ObjectQueue.QueueExists(queueName, client));
-			  //  }
-		   // }
-	    //}
-    }
+		//			Assert.IsTrue(ObjectQueue.QueueExists(queueName, client));
+		//			queue.DeleteQueue();
+		//			Assert.IsFalse(ObjectQueue.QueueExists(queueName, client));
+		//		}
+		//	}
+		//}
+	}
 }

@@ -110,13 +110,29 @@ namespace AmazonSqs {
 	            };
 
 	            _client.SendMessage(req);
-            } catch (AmazonSQSException ex) {
-                throw new QueueException(
-                    "Could not queue request.",
-                    ex
-                );
-            }
-        }
+			}
+			catch (AmazonSQSException ex)
+			{
+				throw new QueueException(
+					"Could not queue request.",
+					ex
+				);
+			}
+			catch (InvalidOperationException ex)
+			{
+				throw new QueueException(
+					"The maximum size of the object graph must not exceed " + JsonSerializer.Value.MaxJsonLength + " bytes.",
+					ex
+				);
+			}
+			catch (ArgumentException ex)
+			{
+				throw new QueueException(
+					"The maximum object depth (" + JsonSerializer.Value.RecursionLimit + ") was reached.",
+					ex
+				);
+			}
+		}
 
         public ObjectMessage<T> Peek<T>() where T : new() {
             return Next<T>(false);
