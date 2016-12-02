@@ -1,21 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Web.Script.Serialization;
 using Amazon;
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using Newtonsoft.Json;
 
 namespace AmazonSqs {
     public class ObjectQueue : IDisposable {
 	    private readonly string _queueName;
         private const int MaxMessageSize = 262144; // 256K
         private readonly IAmazonSQS _client;
+		private static readonly Lazy<JavaScriptSerializer> JsonSerializer = new Lazy<JavaScriptSerializer>();
 
 		/// <summary>
 		/// Gets the queue url.
 		/// </summary>
-	    public string QueueUrl { get; private set; }
+		public string QueueUrl { get; private set; }
 
 	    /// <summary>
 		/// Gets or sets whether this instance has
@@ -105,7 +106,7 @@ namespace AmazonSqs {
 	            SendMessageRequest req = new SendMessageRequest
 	            {
 		            QueueUrl = QueueUrl,
-		            MessageBody = JsonConvert.SerializeObject(submission)
+		            MessageBody = JsonSerializer.Value.Serialize(submission)
 	            };
 
 	            _client.SendMessage(req);
@@ -138,7 +139,7 @@ namespace AmazonSqs {
                 ObjectMessage<T> value = new ObjectMessage<T>();
                 Message m = response.Messages[0];
                 DateTime epochDate = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                value.Object = JsonConvert.DeserializeObject<T>(m.Body);
+                value.Object = JsonSerializer.Value.Deserialize<T>(m.Body);
                 value.ReceiptHandle = m.ReceiptHandle;
 
                 foreach (KeyValuePair<string, string> att in m.Attributes) {
@@ -182,7 +183,7 @@ namespace AmazonSqs {
             if (response.Messages != null && response.Messages.Any()) {
                 retval.Capacity = response.Messages.Count;
                 foreach (Message m in response.Messages) {
-                    T value = JsonConvert.DeserializeObject<T>(m.Body);
+                    T value = JsonSerializer.Value.Deserialize<T>(m.Body);
                     DeleteMessage(m.ReceiptHandle);
                     retval.Add(value);
                 }
